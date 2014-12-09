@@ -19,9 +19,11 @@
 #  include <ace/SOCK_Stream.h>
 #  include <ace/Log_Msg.h>
 #  include <ace/Time_Value.h>
+#  include <ace/os_include/netinet/os_tcp.h>
 #else
 #  include <yarp/os/impl/TcpStream.h>
 #  include <yarp/os/impl/TcpAcceptor.h>
+#  include <netinet/tcp.h>
 #  define ACE_SOCK_Acceptor TcpAcceptor
 #  define ACE_SOCK_Stream TcpStream
 #endif
@@ -163,12 +165,14 @@ public:
     {
     }
 
-    virtual void beginPacket() override
-    {
+    virtual void beginPacket() {
+        int state = 0;
+        stream.set_option(IPPROTO_TCP, TCP_NODELAY, &state, sizeof(int));
     }
 
-    virtual void endPacket() override
-    {
+    virtual void endPacket() {
+        int state = 1;
+        stream.set_option(IPPROTO_TCP, TCP_NODELAY, &state, sizeof(int));
     }
 
     virtual bool setWriteTimeout(double timeout) override
