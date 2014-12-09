@@ -68,9 +68,9 @@ public:
         return ::recv(sd, buf, n, 0);
     }
 
-    inline ssize_t recv_n (void *buf, size_t n, struct timeval *tv)
-    {
-        setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, (char *)tv, sizeof (*tv));
+
+    inline ssize_t recv_n (void *buf, size_t n, struct timeval *tv) {
+        set_option(SOL_SOCKET, SO_RCVTIMEO, (char *)tv, sizeof (*tv));
         return ::recv(sd, buf, n, 0);
     }
 
@@ -79,9 +79,8 @@ public:
         return ::recv(sd, buf, n, 0);
     }
 
-    inline ssize_t recv (void *buf, size_t n, struct timeval *tv)
-    {
-        setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, (char *)tv, sizeof (*tv));
+    inline ssize_t recv (void *buf, size_t n, struct timeval *tv) {
+        set_option(SOL_SOCKET, SO_RCVTIMEO, (char *)tv, sizeof (*tv));
         return ::recv(sd, buf, n, 0);
     }
 
@@ -90,9 +89,8 @@ public:
         return ::send(sd, buf, n, 0);
     }
 
-    inline ssize_t send_n (const void *buf, size_t n, struct timeval *tv)
-    {
-        setsockopt(sd, SOL_SOCKET, SO_SNDTIMEO, (char *)tv, sizeof (*tv));
+    inline ssize_t send_n (const void *buf, size_t n, struct timeval *tv) {
+        set_option(SOL_SOCKET, SO_SNDTIMEO, (char *)tv, sizeof (*tv));
         return ::send(sd, buf, n, 0);
     }
 
