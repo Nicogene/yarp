@@ -276,6 +276,7 @@ public:
         return len;
     }
 
+
     // defined by yarp::os::SizedWriter
     virtual size_t length() override {
         return header_used+lst_used;
@@ -689,9 +690,11 @@ public:
     BufferedConnectionWriter& getMessage() { return readerStore; }
     BufferedConnectionWriter& getReply() { return writerStore; }
     bool hasReply() { return wrote; }
+
     virtual SizedWriter *getBuffer() override { return nullptr; }
 
     virtual bool setSize(size_t len) override {
+
         return reader->setSize(len);
     }
 };

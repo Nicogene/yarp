@@ -34,6 +34,7 @@ public:
     }
     void close() override {}
     bool isOk() override { return true; }
+
 private:
     char *_location;
 };
