@@ -139,10 +139,8 @@ public:
      */
     int readYarpInt(ConnectionState& proto);
 
-    /**
-     * Write \c n as an 8 bytes yarp number
-     */
-    void writeYarpInt(int n, ConnectionState& proto);
+    void writeYarpInt(int n, ConnectionState& proto, bool more = false);
+
 
 /** @} */
 

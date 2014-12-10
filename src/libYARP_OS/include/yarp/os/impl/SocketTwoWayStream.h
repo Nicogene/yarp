@@ -136,14 +136,13 @@ public:
     }
 
     using yarp::os::OutputStream::write;
-    virtual void write(const Bytes& b) override
-    {
+    virtual void write(const Bytes& b, bool more) {
         if (!isOk()) { return; }
         YARP_SSIZE_T result;
         if (haveWriteTimeout) {
-            result = stream.send_n(b.get(), b.length(), &writeTimeout);
+            result = stream.send_n(b.get(), b.length(), (more ? MSG_MORE : 0), &writeTimeout);
         } else {
-            result = stream.send_n(b.get(), b.length());
+            result = stream.send_n(b.get(), b.length(), (more ? MSG_MORE : 0));
         }
         if (result<0) {
             happy = false;
@@ -151,8 +150,11 @@ public:
         }
     }
 
-    virtual void flush() override
-    {
+    virtual void write(const Bytes& b) {
+        write(b, false);
+    }
+
+    virtual void flush() {
         //stream.flush();
     }
 
