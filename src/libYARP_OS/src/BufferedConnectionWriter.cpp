@@ -160,13 +160,14 @@ void BufferedConnectionWriter::restart() {
 
 void BufferedConnectionWriter::write(OutputStream& os) {
     stopWrite();
-    for (size_t i=0; i<header_used; i++) {
+    size_t i;
+    for (i=0; i<header.size(); i++) {
         yarp::os::ManagedBytes& b = *(header[i]);
-        os.write(b.usedBytes());
+        os.write(b.usedBytes(), ((!lst.size() && (i == header.size()-1)) ? false : true));
     }
-    for (size_t i=0; i<lst_used; i++) {
+    for (i=0; i<lst.size(); i++) {
         yarp::os::ManagedBytes& b = *(lst[i]);
-        os.write(b.usedBytes());
+        os.write(b.usedBytes(), ((i == lst.size()-1) ? false : true));
     }
 }
 

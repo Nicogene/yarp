@@ -150,7 +150,7 @@ public:
         }
     }
 
-    virtual void write(const Bytes& b) {
+    virtual void write(const Bytes& b)  override {
         write(b, false);
     }
 

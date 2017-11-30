@@ -256,19 +256,7 @@ public:
     }
 
 
-    void write(OutputStream& os) {
-        stopWrite();
-        size_t i;
-        for (i=0; i<header.size(); i++) {
-            yarp::os::ManagedBytes& b = *(header[i]);
-            os.write(b.usedBytes(), ((!lst.size() && (i == header.size()-1)) ? false : true));
-        }
-        for (i=0; i<lst.size(); i++) {
-            yarp::os::ManagedBytes& b = *(lst[i]);
-            os.write(b.usedBytes(), ((i == lst.size()-1) ? false : true));
-        }
-    }
-
+    void write(OutputStream& os) override;
 
     /**
      * @return the size of the message that will be sent, in bytes, including
