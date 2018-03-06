@@ -36,7 +36,7 @@ static bool similar(double x, double y, double eps) {
 }
 */
 
-TEST_CASE("BottleTest", "[yarp::os]") {
+TEST_CASE("OS::BottleTest", "[yarp::os]") {
     SECTION("testing sizes") {
         BottleImpl bot;
         CHECK(bot.size() == 0); // "empty bottle"

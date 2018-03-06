@@ -35,7 +35,7 @@ public:
 YARP_END_PACK
 
 
-TEST_CASE("BinPortableTest", "[yarp::os]") {
+TEST_CASE("OS::BinPortableTest", "[yarp::os]") {
 
     NetworkBase::setLocalMode(true);
 
