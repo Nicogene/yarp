@@ -47,10 +47,8 @@ TEST_CASE("BinPortableTest", "[yarp::os]") {
         Port input, output;
         bool ok1 = input.open("/in");
         bool ok2 = output.open("/out");
-        REQUIRE((ok1 && ok2)); // "ports opened ok");
-        if (!(ok1 && ok2)) {
-            return;
-        }
+        REQUIRE(ok1);
+        REQUIRE(ok2); // "ports opened ok"
 
         buf.attach(input);
         output.addOutput(Contact("/in", "tcp"));
@@ -59,7 +57,7 @@ TEST_CASE("BinPortableTest", "[yarp::os]") {
         INFO("reading...");
         BinPortable<int> *result = buf.read();
         REQUIRE(result != nullptr); // "got something check"
-        REQUIRE(result->content() == 5); //"value preserved");
+        CHECK(result->content() == 5); // "value preserved"
         output.close();
         input.close();
     }
@@ -77,8 +75,8 @@ TEST_CASE("BinPortableTest", "[yarp::os]") {
         t1.write(con.getWriter());
         t2.read(con.getReader());
 
-        REQUIRE(t2.content().x == 10); //, "x value");
-        REQUIRE(t2.content().y == 20); //, "y value");
+        CHECK(t2.content().x == 10); // "x value"
+        CHECK(t2.content().y == 20); // "y value"
     }
 
     NetworkBase::setLocalMode(false);
