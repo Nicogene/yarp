@@ -156,6 +156,9 @@ public:
 
     void step()
     {
+        yError()<<sleepPeriod;
+        yError()<<adaptedPeriod;
+        yError()<<elapsed;
         yDebug()<<"1";
         lock();
         currentRun = nowFunc();
@@ -181,7 +184,12 @@ public:
         unlock();
         yDebug()<<"4";
         if (!suspended) {
+            yDebug()<<"Run is called";
             owner->run();
+        }
+        else
+        {
+            yError()<<"run is not";
         }
 
 
