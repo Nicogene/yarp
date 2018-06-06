@@ -82,9 +82,11 @@ public:
         checkTrue(v4.isList(),"list copied");
         checkEqual(v4.asList()->get(1).asInt32(),2,"right integer present");
 
-        Bottle b("(x 10) (y 42)");
+        Bottle b("(x 10) (y 42) (boolean true)");
         checkEqual(b.check("x",Value(5)).asInt32(),10,"default not used");
         checkEqual(b.check("xx",Value(5)).asInt32(),5,"default used");
+        checkEqual(b.check("boolean",Value(false)).asBool(), true, "check(bool): default not used(bool)");
+        checkEqual(b.find("boolean").asBool(), true, "find(bool)");
 
         Value& vnull = Value::getNullValue();
         Value vnull2(vnull);

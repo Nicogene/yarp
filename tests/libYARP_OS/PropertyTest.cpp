@@ -52,9 +52,12 @@ public:
         Property p;
         p.put("ten",10);
         p.put("pi",(double)3.14);
+        p.put("bool", true);
+        bool flag = p.find("bool").asBool();
         checkEqual(p.find("ten").asInt32(),10,"ten");
         checkTrue(p.find("pi").asFloat64()>3,"pi>3");
         checkTrue(p.find("pi").asFloat64()<4,"pi<4");
+        checkEqual(flag, true, "bool true");
         p.unput("ten");
         checkTrue(p.find("ten").isNull(),"unput");
     }
@@ -165,9 +168,15 @@ public:
             "--cmd",
             "\"ls foo\"",
             "--x::y::z",
-            "10"
+            "10",
+            "--flag",
+            "true",
+            "--integer",
+            "1",
+            "--double",
+            "0.4"
         };
-        int argc = 7;
+        int argc = 13;
         Property p;
         p.fromCommand(argc,argv);
         checkEqual(p.findGroup("x").findGroup("y").find("z").asInt32(),10,"x::y::z ok");
@@ -175,6 +184,11 @@ public:
         p2.fromCommand(argc,argv,true,false);
         checkEqual(p2.findGroup("x").findGroup("y").find("z").asInt32(),10,"x::y::z #2 ok");
         checkEqual(p2.findGroup("x").findGroup("y").find("r").asInt32(),92,"x::y::r ok");
+        Property p3;
+        p3.fromCommand(argc, argv);
+        checkEqual(p3.find("flag").asBool(), true, "bool parsing ok");
+        checkEqual(p3.find("integer").asInt32(), 1, "int parsing ok");
+        checkEqual(p3.find("double").asFloat64(), 0.4, "double parsing ok");
     }
 
     void checkLineBreak() {

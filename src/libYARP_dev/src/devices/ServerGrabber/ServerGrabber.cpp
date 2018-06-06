@@ -938,6 +938,7 @@ bool ServerGrabber::attachAll(const PolyDriverList &device2attach)
         }
     }
 
+    yError()<<"Setting period in the grabber"<<period;
     PeriodicThread::setPeriod(period);
     ret = PeriodicThread::start();
 

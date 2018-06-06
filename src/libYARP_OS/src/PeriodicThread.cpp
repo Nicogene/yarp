@@ -12,6 +12,7 @@
 
 #include <yarp/os/impl/ThreadImpl.h>
 #include <yarp/os/impl/Logger.h>
+#include <yarp/os/LogStream.h>
 #include <yarp/os/impl/PlatformTime.h>
 
 #include <cmath>
@@ -155,9 +156,10 @@ public:
 
     void step()
     {
+        yDebug()<<"1";
         lock();
         currentRun = nowFunc();
-
+        yDebug()<<"2";
         if (scheduleReset)
             _resetStat();
 
@@ -174,10 +176,10 @@ public:
             //fprintf(stderr, "dT:%lf, error %lf, adaptedPeriod: %lf, new:%lf\n", dT, error, saved, adaptedPeriod);
             estPIt++;
         }
-
+        yDebug()<<"3";
         previousRun=currentRun;
         unlock();
-
+        yDebug()<<"4";
         if (!suspended) {
             owner->run();
         }
@@ -189,6 +191,7 @@ public:
         // Note: call yield BEFORE computing elapsed time, so that any time spent due to
         // yield is took into account and the sleep time is correct.
         yield();
+        yDebug()<<"5";
 
         lock();
         count++;
@@ -197,22 +200,28 @@ public:
         totalUsed+=elapsed;
         sumUsedSq+=elapsed*elapsed;
         unlock();
+        yDebug()<<"period"<<adaptedPeriod;
+        yDebug()<<"elapsed"<<elapsed;
 
-        sleepPeriod= adaptedPeriod - elapsed; // everything is in [seconds] except period, for it is used in the interface as [ms]
+        sleepPeriod= adaptedPeriod - elapsed;
+        yDebug()<<"sleepPeriod"<<sleepPeriod;
 
         delayFunc(sleepPeriod);
     }
 
     void run() override
     {
+        yDebug()<<"rrrrrun";
         while(!isClosing())
         {
+            yError()<<isClosing();
             step();
         }
     }
 
     bool threadInit() override
     {
+        yDebug()<<"Iniziano le danze!";
         return owner->threadInit();
     }
 
@@ -223,6 +232,7 @@ public:
 
     bool setPeriod(double period)
     {
+        yError()<<"Sto settando il periodo!"<<period;
         adaptedPeriod = period;
         return true;
     }
