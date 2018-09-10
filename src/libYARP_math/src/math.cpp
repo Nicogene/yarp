@@ -953,3 +953,66 @@ Matrix yarp::math::adjointInv(const Matrix &H)
 
     return A;
 }
+
+PointCloud<DataXYZ> yarp::math::depthToPC(const yarp::sig::ImageOf<PixelFloat> &depth,
+                              const yarp::os::Property &depthIntrinsic)
+{
+    yAssert(depth.width()  != 0);
+    yAssert(depth.height() != 0);
+    yAssert(depthIntrinsic.check("focalLengthX")    &&
+            depthIntrinsic.check("focalLengthY")    &&
+            depthIntrinsic.check("principalPointX") &&
+            depthIntrinsic.check("principalPointY"));
+
+    PointCloud<DataXYZ> pointCloud;
+    pointCloud.resize(depth.width(), depth.height());
+    auto fx = depthIntrinsic.find("focalLengthX").asFloat64();
+    auto fy = depthIntrinsic.find("focalLengthY").asFloat64();
+    auto cx = depthIntrinsic.find("principalPointX").asFloat64();
+    auto cy = depthIntrinsic.find("principalPointY").asFloat64();
+
+    for (size_t u = 0; u < depth.width(); ++u) {
+        for (size_t v = 0; v < depth.height(); ++v) {
+            pointCloud(u,v).x = (u - cx)/fx*depth.pixel(u,v);
+            pointCloud(u,v).y = (v - cy)/fy*depth.pixel(u,v);
+            pointCloud(u,v).z = depth.pixel(u,v);
+        }
+    }
+    return pointCloud;
+}
+template<>
+yarp::sig::PointCloud<DataXYZRGBA> yarp::math::depthRgbToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
+                                                                         const yarp::sig::ImageOf<PixelRgb>& color,
+                                                                         const yarp::os::Property& depthIntrinsic)
+{
+    yAssert(depth.width()  != 0);
+    yAssert(depth.height() != 0);
+    yAssert(depth.width()  == color.width());
+    yAssert(depth.height() == color.height());
+    yAssert(depthIntrinsic.check("focalLengthX")    &&
+            depthIntrinsic.check("focalLengthY")    &&
+            depthIntrinsic.check("principalPointX") &&
+            depthIntrinsic.check("principalPointY"));
+
+    PointCloud<DataXYZRGBA> pointCloud;
+    pointCloud.resize(depth.width(), depth.height());
+    auto fx = depthIntrinsic.find("focalLengthX").asFloat64();
+    auto fy = depthIntrinsic.find("focalLengthY").asFloat64();
+    auto cx = depthIntrinsic.find("principalPointX").asFloat64();
+    auto cy = depthIntrinsic.find("principalPointY").asFloat64();
+
+    for (size_t u = 0; u < depth.width(); ++u) {
+        for (size_t v = 0; v < depth.height(); ++v) {
+            // Depth
+            pointCloud(u,v).x = (u - cx)/fx*depth.pixel(u,v);
+            pointCloud(u,v).y = (v - cy)/fy*depth.pixel(u,v);
+            pointCloud(u,v).z = depth.pixel(u,v);
+            // Color
+            pointCloud(u,v).r = color.pixel(u,v).r;
+            pointCloud(u,v).g = color.pixel(u,v).g;
+            pointCloud(u,v).b = color.pixel(u,v).b;
+
+        }
+    }
+    return pointCloud;
+}

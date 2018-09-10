@@ -10,8 +10,10 @@
 #ifndef YARP_MATH
 #define YARP_MATH
 
+#include <yarp/sig/Image.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/sig/Matrix.h>
+#include <yarp/sig/PointCloud.h>
 #include <yarp/math/api.h>
 #include <yarp/math/Quaternion.h>
 
@@ -629,6 +631,28 @@ namespace yarp
         * @return the inverse of the adjoint matrix
         */
         YARP_math_API yarp::sig::Matrix adjointInv(const yarp::sig::Matrix &H);
+
+        /**
+         * @brief depthToPC
+         * @param depth
+         * @param depthIntrinsic
+         * @return
+         */
+        YARP_math_API yarp::sig::PointCloud<yarp::sig::DataXYZ> depthToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
+                                                                          const yarp::os::Property& depthIntrinsic);
+
+        /**
+         * @brief depthRgbToPC
+         * @param depth
+         * @param color
+         * @param depthIntrinsic
+         * @return
+         */
+        template<typename T1, typename T2>
+        YARP_math_API yarp::sig::PointCloud<T1> depthRgbToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
+                                                                                 const yarp::sig::ImageOf<T2>& color,
+                                                                                 const yarp::os::Property& depthIntrinsic);
+
     }
 }
 
