@@ -43,6 +43,42 @@ public:
         IntrinsicParams(): principalPointX(0.0), principalPointY(0.0),
                            focalLengthX(0.0), focalLengthY(0.0),
                            distortionModel(), isOptional(false) {}
+
+        IntrinsicParams(const yarp::os::Searchable &intrinsic)
+        {
+            yAssert(intrinsic.check("focalLengthX")    &&
+                    intrinsic.check("focalLengthY")    &&
+                    intrinsic.check("principalPointX") &&
+                    intrinsic.check("principalPointY"));
+            focalLengthX    = intrinsic.find("focalLengthX").asFloat64();
+            focalLengthY    = intrinsic.find("focalLengthY").asFloat64();
+            principalPointX = intrinsic.find("principalPointX").asFloat64();
+            principalPointY = intrinsic.find("principalPointY").asFloat64();
+            // The distortion parameters are optional
+            distortionModel.k1 = intrinsic.check("k1", yarp::os::Value(0.0)).asFloat64();
+            distortionModel.k2 = intrinsic.check("k2", yarp::os::Value(0.0)).asFloat64();
+            distortionModel.t1 = intrinsic.check("t1", yarp::os::Value(0.0)).asFloat64();
+            distortionModel.t2 = intrinsic.check("t2", yarp::os::Value(0.0)).asFloat64();
+            distortionModel.k3 = intrinsic.check("k3", yarp::os::Value(0.0)).asFloat64();
+
+        }
+
+        void toProperty(yarp::os::Property& intrinsic) const
+        {
+            intrinsic.put("focalLengthX",       focalLengthX);
+            intrinsic.put("focalLengthY",       focalLengthY);
+            intrinsic.put("principalPointX",    principalPointX);
+            intrinsic.put("principalPointY",    principalPointY);
+
+            intrinsic.put("distortionModel", "plumb_bob");
+            intrinsic.put("k1", distortionModel.k1);
+            intrinsic.put("k2", distortionModel.k2);
+            intrinsic.put("t1", distortionModel.t1);
+            intrinsic.put("t2", distortionModel.t2);
+            intrinsic.put("k3", distortionModel.k3);
+
+            intrinsic.put("stamp", yarp::os::Time::now());
+        }
     };
     struct YARP_dev_API RGBDParam
     {

@@ -642,19 +642,7 @@ bool depthCameraDriver::setRgbMirroring(bool mirror)
 
 bool depthCameraDriver::setIntrinsic(Property& intrinsic, const RGBDSensorParamParser::IntrinsicParams& values)
 {
-    intrinsic.put("focalLengthX",       values.focalLengthX);
-    intrinsic.put("focalLengthY",       values.focalLengthY);
-    intrinsic.put("principalPointX",    values.principalPointX);
-    intrinsic.put("principalPointY",    values.principalPointY);
-
-    intrinsic.put("distortionModel", "plumb_bob");
-    intrinsic.put("k1", values.distortionModel.k1);
-    intrinsic.put("k2", values.distortionModel.k2);
-    intrinsic.put("t1", values.distortionModel.t1);
-    intrinsic.put("t2", values.distortionModel.t2);
-    intrinsic.put("k3", values.distortionModel.k3);
-
-    intrinsic.put("stamp", yarp::os::Time::now());
+    values.toProperty(intrinsic);
     return true;
 }
 
