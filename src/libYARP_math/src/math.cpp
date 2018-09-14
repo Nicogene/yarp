@@ -954,63 +954,142 @@ Matrix yarp::math::adjointInv(const Matrix &H)
     return A;
 }
 
+struct IntrinsicParams : public yarp::os::Portable
+{
+    struct plum_bob
+    {
+        double k1;
+        double k2;
+        double t1;
+        double t2;
+        double k3;
+        plum_bob(): k1(0.0), k2(0.0),
+                    t1(0.0), t2(0.0),
+                    k3(0.0) {}
+    };
+    double   principalPointX;
+    double   principalPointY;
+    double   focalLengthX;
+    double   focalLengthY;
+    plum_bob distortionModel;
+    bool     isOptional;
+    IntrinsicParams(): principalPointX(0.0), principalPointY(0.0),
+                       focalLengthX(0.0), focalLengthY(0.0),
+                       distortionModel(), isOptional(false) {}
+
+    IntrinsicParams(const yarp::os::Property &intrinsic)
+    {
+        fromProperty(intrinsic);
+    }
+
+    void toProperty(yarp::os::Property& intrinsic) const
+    {
+        intrinsic.put("focalLengthX",       focalLengthX);
+        intrinsic.put("focalLengthY",       focalLengthY);
+        intrinsic.put("principalPointX",    principalPointX);
+        intrinsic.put("principalPointY",    principalPointY);
+
+        intrinsic.put("distortionModel", "plumb_bob");
+        intrinsic.put("k1", distortionModel.k1);
+        intrinsic.put("k2", distortionModel.k2);
+        intrinsic.put("t1", distortionModel.t1);
+        intrinsic.put("t2", distortionModel.t2);
+        intrinsic.put("k3", distortionModel.k3);
+
+        intrinsic.put("stamp", yarp::os::Time::now());
+    }
+
+    void fromProperty(const yarp::os::Property& intrinsic)
+    {
+        yAssert(intrinsic.check("focalLengthX")    &&
+                intrinsic.check("focalLengthY")    &&
+                intrinsic.check("principalPointX") &&
+                intrinsic.check("principalPointY"));
+        focalLengthX    = intrinsic.find("focalLengthX").asFloat64();
+        focalLengthY    = intrinsic.find("focalLengthY").asFloat64();
+        principalPointX = intrinsic.find("principalPointX").asFloat64();
+        principalPointY = intrinsic.find("principalPointY").asFloat64();
+        // The distortion parameters are optional
+        distortionModel.k1 = intrinsic.check("k1", yarp::os::Value(0.0)).asFloat64();
+        distortionModel.k2 = intrinsic.check("k2", yarp::os::Value(0.0)).asFloat64();
+        distortionModel.t1 = intrinsic.check("t1", yarp::os::Value(0.0)).asFloat64();
+        distortionModel.t2 = intrinsic.check("t2", yarp::os::Value(0.0)).asFloat64();
+        distortionModel.k3 = intrinsic.check("k3", yarp::os::Value(0.0)).asFloat64();
+    }
+
+    bool read(yarp::os::ConnectionReader& reader) override {
+        yarp::os::Property prop;
+        bool ok = prop.read(reader);
+        if (ok)
+        {
+            fromProperty(prop);
+        }
+        return ok;
+    }
+    bool write(yarp::os::ConnectionWriter& writer) const override {
+        yarp::os::Property prop;
+        toProperty(prop);
+        return prop.write(writer);
+    }
+
+};
+
+
 PointCloud<DataXYZ> yarp::math::depthToPC(const yarp::sig::ImageOf<PixelFloat> &depth,
-                              const yarp::os::Property &depthIntrinsic)
+                                          const yarp::os::Property &intrinsic)
 {
     yAssert(depth.width()  != 0);
     yAssert(depth.height() != 0);
-    yAssert(depthIntrinsic.check("focalLengthX")    &&
-            depthIntrinsic.check("focalLengthY")    &&
-            depthIntrinsic.check("principalPointX") &&
-            depthIntrinsic.check("principalPointY"));
-
+    IntrinsicParams param(intrinsic);
     PointCloud<DataXYZ> pointCloud;
     pointCloud.resize(depth.width(), depth.height());
-    auto fx = depthIntrinsic.find("focalLengthX").asFloat64();
-    auto fy = depthIntrinsic.find("focalLengthY").asFloat64();
-    auto cx = depthIntrinsic.find("principalPointX").asFloat64();
-    auto cy = depthIntrinsic.find("principalPointY").asFloat64();
 
     for (size_t u = 0; u < depth.width(); ++u) {
         for (size_t v = 0; v < depth.height(); ++v) {
-            pointCloud(u,v).x = (u - cx)/fx*depth.pixel(u,v);
-            pointCloud(u,v).y = (v - cy)/fy*depth.pixel(u,v);
+            pointCloud(u,v).x = (u - param.principalPointX)/param.focalLengthX*depth.pixel(u,v);
+            pointCloud(u,v).y = (v - param.principalPointY)/param.focalLengthY*depth.pixel(u,v);
             pointCloud(u,v).z = depth.pixel(u,v);
         }
     }
     return pointCloud;
 }
-template<>
-yarp::sig::PointCloud<DataXYZRGBA> yarp::math::depthRgbToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
-                                                                         const yarp::sig::ImageOf<PixelRgb>& color,
-                                                                         const yarp::os::Property& depthIntrinsic)
+
+template<typename T1, typename T2>
+yarp::sig::PointCloud<T1> yarp::math::depthRgbToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
+                                                   const yarp::sig::ImageOf<T2>& color,
+                                                   const yarp::os::Property& intrinsic)
 {
     yAssert(depth.width()  != 0);
     yAssert(depth.height() != 0);
     yAssert(depth.width()  == color.width());
     yAssert(depth.height() == color.height());
-    yAssert(depthIntrinsic.check("focalLengthX")    &&
-            depthIntrinsic.check("focalLengthY")    &&
-            depthIntrinsic.check("principalPointX") &&
-            depthIntrinsic.check("principalPointY"));
-
-    PointCloud<DataXYZRGBA> pointCloud;
+    IntrinsicParams param(intrinsic);
+    PointCloud<T1> pointCloud;
     pointCloud.resize(depth.width(), depth.height());
-    auto fx = depthIntrinsic.find("focalLengthX").asFloat64();
-    auto fy = depthIntrinsic.find("focalLengthY").asFloat64();
-    auto cx = depthIntrinsic.find("principalPointX").asFloat64();
-    auto cy = depthIntrinsic.find("principalPointY").asFloat64();
 
     for (size_t u = 0; u < depth.width(); ++u) {
         for (size_t v = 0; v < depth.height(); ++v) {
             // Depth
-            pointCloud(u,v).x = (u - cx)/fx*depth.pixel(u,v);
-            pointCloud(u,v).y = (v - cy)/fy*depth.pixel(u,v);
+            pointCloud(u,v).x = (u - param.principalPointX)/param.focalLengthX*depth.pixel(u,v);
+            pointCloud(u,v).y = (v - param.principalPointY)/param.focalLengthY*depth.pixel(u,v);
             pointCloud(u,v).z = depth.pixel(u,v);
-            // Color
-            pointCloud(u,v).r = color.pixel(u,v).r;
-            pointCloud(u,v).g = color.pixel(u,v).g;
-            pointCloud(u,v).b = color.pixel(u,v).b;
+
+            if (std::is_same<T1, DataXYZRGBA>::value) {
+                if (std::is_same<T2, PixelRgb>::value  ||
+                    std::is_same<T2, PixelBgr>::value  ||
+                    std::is_same<T2, PixelRgba>::value ||
+                    std::is_same<T2, PixelBgra>::value) {
+                    // Color
+                    pointCloud(u,v).r = color.pixel(u,v).r;
+                    pointCloud(u,v).g = color.pixel(u,v).g;
+                    pointCloud(u,v).b = color.pixel(u,v).b;
+                    if (std::is_same<T2, PixelRgba>::value ||
+                        std::is_same<T2, PixelBgra>::value) {
+                        pointCloud(u,v).a = color.pixel(u,v).a;
+                    }
+                }
+            }
+
 
         }
     }

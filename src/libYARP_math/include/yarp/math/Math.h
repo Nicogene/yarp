@@ -635,23 +635,23 @@ namespace yarp
         /**
          * @brief depthToPC
          * @param depth
-         * @param depthIntrinsic
+         * @param intrinsic
          * @return
          */
         YARP_math_API yarp::sig::PointCloud<yarp::sig::DataXYZ> depthToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
-                                                                          const yarp::os::Property& depthIntrinsic);
+                                                                          const yarp::os::Property& intrinsic);
 
         /**
          * @brief depthRgbToPC
          * @param depth
          * @param color
-         * @param depthIntrinsic
+         * @param intrinsic
          * @return
          */
         template<typename T1, typename T2>
         YARP_math_API yarp::sig::PointCloud<T1> depthRgbToPC(const yarp::sig::ImageOf<yarp::sig::PixelFloat>& depth,
-                                                                                 const yarp::sig::ImageOf<T2>& color,
-                                                                                 const yarp::os::Property& depthIntrinsic);
+                                                             const yarp::sig::ImageOf<T2>& color,
+                                                             const yarp::os::Property& intrinsic);
 
     }
 }
