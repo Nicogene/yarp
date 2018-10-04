@@ -21,9 +21,10 @@
 #include <yarp/os/impl/Logger.h>
 
 #include <yarp/os/Bottle.h>
-#include <yarp/os/Vocab.h>
 #include <yarp/os/DummyConnector.h>
+#include <yarp/os/ManagedBytes.h>
 #include <yarp/os/Stamp.h>
+#include <yarp/os/Vocab.h>
 
 
 using namespace yarp::os::impl;
@@ -44,7 +45,7 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
     SECTION("testing sizes") {
         BottleImpl bot;
         CHECK(bot.size() == 0); // "empty bottle"
-        bot.addInt(1);
+        bot.addInt32(1);
         CHECK(bot.size() == 1); // "add int"
         bot.addString("hello");
         CHECK(bot.size() == 2); // "add string"
@@ -53,11 +54,11 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
     }
 
     SECTION("testing string representation") {
-        ConstString target = "hello \"my\" \\friend";
+        std::string target = "hello \"my\" \\friend";
         BottleImpl bot;
-        bot.addInt(5);
+        bot.addInt32(5);
         bot.addString("hello \"my\" \\friend");
-        ConstString txt = bot.toString();
+        std::string txt = bot.toString();
         const char *expect = "5 \"hello \\\"my\\\" \\\\friend\"";
         CHECK(txt == expect); // "string rep"
         BottleImpl bot2;
@@ -67,16 +68,16 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
 
     SECTION("testing binary representation") {
         BottleImpl bot;
-        bot.addInt(5);
+        bot.addInt32(5);
         bot.addString("hello");
-        CHECK(bot.isInt(0)); // "type check"
+        CHECK(bot.isInt32(0)); // "type check"
         CHECK(bot.isString(1)); // "type check"
         ManagedBytes store(bot.byteCount());
         bot.toBytes(store.bytes());
         BottleImpl bot2;
         bot2.fromBytes(store.bytes());
         CHECK(bot2.size() == 2); // "recovery binary, length"
-        CHECK(bot2.isInt(0) == bot.isInt(0)); //"recovery binary, integer"
+        CHECK(bot2.isInt32(0) == bot.isInt32(0)); //"recovery binary, integer"
         CHECK(bot2.isString(1) == bot.isString(1)); //"recovery binary, integer"
         BottleImpl bot3;
         bot3.fromString("[go] (10 20 30 40)");
@@ -112,13 +113,13 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
 
     SECTION("testing streaming (just text mode)") {
         BottleImpl bot;
-        bot.addInt(5);
+        bot.addInt32(5);
         bot.addString("hello");
 
         BufferedConnectionWriter bbw(true);
         bot.write(bbw);
 
-        ConstString s;
+        std::string s;
         StringInputStream sis;
         StreamConnectionReader sbr;
 
@@ -136,11 +137,11 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         BottleImpl bot[3];
         bot[0].fromString("5 10.2 \"hello\" -0xF -15.0");
         CHECK(bot[0].get(3).asInt() == -15); // "hex works"
-        bot[1].addInt(5);
-        bot[1].addDouble(10.2);
+        bot[1].addInt32(5);
+        bot[1].addFloat64(10.2);
         bot[1].addString("hello");
-        bot[1].addInt(-15);
-        bot[1].addDouble(-15.0);
+        bot[1].addInt32(-15);
+        bot[1].addFloat64(-15.0);
         ManagedBytes store(bot[0].byteCount());
         bot[0].toBytes(store.bytes());
         bot[2].fromBytes(store.bytes());
@@ -148,20 +149,20 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         for (int i=0; i<3; i++) {
             BottleImpl& b = bot[i];
             INFO("check for bottle number " << i);
-            CHECK(b.isInt(0));
-            CHECK(b.getInt(0) == 5);
+            CHECK(b.isInt32(0));
+            CHECK(b.get(0).asInt32() == 5);
 
-            CHECK(b.isDouble(1));
-            CHECK(b.getDouble(1) == Approx(10.2));
+            CHECK(b.isFloat64(1));
+            CHECK(b.get(1).asFloat64() == Approx(10.2));
 
             CHECK(b.isString(2));
-            CHECK(b.getString(2) == "hello");
+            CHECK(b.get(2).asString() == "hello");
 
-            CHECK(b.isInt(3));
-            CHECK(b.getInt(3) == -15);
+            CHECK(b.isInt32(3));
+            CHECK(b.get(3).asInt32() == -15);
 
-            CHECK(b.isDouble(4));
-            CHECK(b.getDouble(4) == Approx(-15.0));
+            CHECK(b.isFloat64(4));
+            CHECK(b.get(4).asFloat64() == Approx(-15.0));
         }
 
     }
@@ -261,7 +262,7 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         Bottle bot("[send] 10 20");
         CHECK(bot.size() == 3); // "plausible parse"
         CHECK(bot.get(0).isVocab()); // "vocab present"
-        CHECK(bot.get(0).asInt() == VOCAB('s','e','n','d')); // "vocab match"
+        CHECK(bot.get(0).asInt() == yarp::os::createVocab('s','e','n','d')); // "vocab match"
     }
 
 
@@ -295,7 +296,7 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         //bot.specialize(bot.get(0).getCode());
         BufferedConnectionWriter writer;
         bot.write(writer);
-        ConstString s = writer.toString();
+        std::string s = writer.toString();
         CHECK(s.length() == sizeof(NetInt32)*(1+1+bot.size())); // "exact number of integers, plus type/count"
 
         Bottle bot2("[go] (10 20 30 40)");
@@ -361,7 +362,7 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         checkEqual(bot.get(1).asInt(),10,"post-tab ok");
 
         report(0, "checking pasa problem with lists missing last element...");
-        ConstString s2 = "[set] [poss] (10.0 20.0 30.0 40.0 5.1)\n";
+        std::string s2 = "[set] [poss] (10.0 20.0 30.0 40.0 5.1)\n";
         Bottle p;
         p.fromString(s2.c_str());
         checkEqual(p.get(2).asList()->size(),5,"newline test checks out");
@@ -379,7 +380,7 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         Bottle bot("file ../foo.txt");
         checkTrue(bot.get(1).isString(),"paths starting with a decimal");
         Bottle bot2;
-        ConstString test = "\"\n\r\"";
+        std::string test = "\"\n\r\"";
         bot2.addString(test);
         Bottle bot3;
         bot3.fromString(bot2.toString());
@@ -539,11 +540,11 @@ TEST_CASE("OS::BottleTest", "[yarp::os]") {
         char buf2[] = "hello world";
         buf2[5] = '\0';
         size_t len = 11;
-        ConstString str1(buf1,len);
-        ConstString str2(buf2,len);
+        std::string str1(buf1,len);
+        std::string str2(buf2,len);
         checkEqual(str1.length(),len,"unmodified string length ok");
         checkEqual(str2.length(),len,"modified string length ok");
-        ConstString str3(str2);
+        std::string str3(str2);
         checkEqual(str3.length(),len,"copied string length ok");
         Bottle bot;
         bot.addString(str2);
