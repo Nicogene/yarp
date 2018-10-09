@@ -14,29 +14,18 @@
 #include "catch.hpp"
 #endif
 
-#ifdef YARP2_LINUX
-# define CHECK_FOR_LEAKS
-#endif
-
-#ifdef CHECK_FOR_LEAKS
-# include <mcheck.h>
-#endif
-
-
 #include <yarp/os/Network.h>
 #include <yarp/os/Property.h>
 #include <yarp/os/NameStore.h>
 
 #include <yarp/serversql/yarpserversql.h>
 
+#include <YarpBuildLocation.h>
+
 using namespace yarp::os;
 
 int main(int argc, char *argv[])
 {
-#ifdef CHECK_FOR_LEAKS
-    mtrace();
-#endif
-
     Catch::Session session;
 
     bool verbose = 0;
@@ -65,7 +54,35 @@ int main(int argc, char *argv[])
         Network::setVerbosity(1);
     }
 
+    // To make sure that the dev test are able to find all the devices
+    // compile by YARP, also the one compiled as dynamic plugins
+    // we add the build directory to the YARP_DATA_DIRS enviromental variable
+    // CMAKE_CURRENT_DIR is the define by the CMakeLists.txt tests file
+    std::string dirs = CMAKE_BINARY_DIR +
+                       yarp::os::Network::getDirectorySeparator() +
+                       "share" +
+                       yarp::os::Network::getDirectorySeparator() +
+                       "yarp";
+
+    // Add TEST_DATA_DIR to YARP_DATA_DIRS in order to find the contexts used
+    // by the tests
+    dirs += yarp::os::Network::getPathSeparator() +
+            TEST_DATA_DIR;
+
+    // If set, append user YARP_DATA_DIRS
+    // FIXME check if this can be removed
+    Network::getEnvironment("YARP_DATA_DIRS");
+    if (!Network::getEnvironment("YARP_DATA_DIRS").empty()) {
+        dirs += yarp::os::Network::getPathSeparator() +
+                Network::getEnvironment("YARP_DATA_DIRS");
+    }
+
+    Network::setEnvironment("YARP_DATA_DIRS", dirs);
+    printf("YARP_DATA_DIRS=\"%s\"\n", Network::getEnvironment("YARP_DATA_DIRS").c_str());
+
+
     returnCode = session.run();
+
 
     yarp.queryBypass(nullptr);
     delete store;
