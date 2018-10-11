@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
     bool verbose = 0;
 
-#if (CATCH_VERSION_MAJOR>=2)
+#if defined(CATCH_VERSION_MAJOR) && (CATCH_VERSION_MAJOR>=2)
     using namespace Catch::clara;
     auto cli = session.cli() | Opt(verbose )["-y"]["--yarp-verbose"]("Enable verbose mode");
     session.cli( cli );
