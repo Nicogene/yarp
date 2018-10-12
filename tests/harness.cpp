@@ -22,17 +22,90 @@
 
 #include <YarpBuildLocation.h>
 
-using namespace yarp::os;
+namespace {
+
+static yarp::os::Network* net = nullptr;
+static yarp::os::NameStore* store = nullptr;
+static bool verbose = false;
+
+static void setup_Environment()
+{
+    // To make sure that the dev test are able to find all the devices
+    // compile by YARP, also the one compiled as dynamic plugins
+    // we add the build directory to the YARP_DATA_DIRS enviromental variable
+    // CMAKE_CURRENT_DIR is the define by the CMakeLists.txt tests file
+    std::string dirs = CMAKE_BINARY_DIR +
+                       yarp::os::NetworkBase::getDirectorySeparator() +
+                       "share" +
+                       yarp::os::NetworkBase::getDirectorySeparator() +
+                       "yarp";
+
+    // Add TEST_DATA_DIR to YARP_DATA_DIRS in order to find the contexts used
+    // by the tests
+    dirs += yarp::os::NetworkBase::getPathSeparator() +
+            TEST_DATA_DIR;
+
+    // If set, append user YARP_DATA_DIRS
+    // FIXME check if this can be removed
+    yarp::os::NetworkBase::getEnvironment("YARP_DATA_DIRS");
+    if (!yarp::os::NetworkBase::getEnvironment("YARP_DATA_DIRS").empty()) {
+        dirs += yarp::os::NetworkBase::getPathSeparator() +
+                yarp::os::NetworkBase::getEnvironment("YARP_DATA_DIRS");
+    }
+
+    yarp::os::NetworkBase::setEnvironment("YARP_DATA_DIRS", dirs);
+
+    if (verbose) {
+        printf("YARP_DATA_DIRS=\"%s\"\n", yarp::os::NetworkBase::getEnvironment("YARP_DATA_DIRS").c_str());
+    }
+}
+
+static void init_Network()
+{
+    net = new yarp::os::Network;
+    if (verbose) {
+        yarp::os::NetworkBase::setVerbosity(1);
+    }
+}
+
+static void fini_Network()
+{
+    delete net;
+    net = nullptr;
+}
+
+static void init_NameStore()
+{
+    assert(net != nullptr);
+
+    yarp::os::Property opts;
+    opts.put("portdb",":memory:");
+    opts.put("subdb",":memory:");
+    opts.put("local",1);
+    if (verbose) {
+        opts.put("verbose", 1);
+    }
+    store = yarpserver_create(opts);
+    net->queryBypass(store);
+}
+
+static void fini_NameStore()
+{
+    net->queryBypass(nullptr);
+    delete store;
+    store = nullptr;
+}
+
+} // namespace
+
 
 int main(int argc, char *argv[])
 {
     Catch::Session session;
 
-    bool verbose = 0;
-
 #if defined(CATCH_VERSION_MAJOR) && (CATCH_VERSION_MAJOR>=2)
     using namespace Catch::clara;
-    auto cli = session.cli() | Opt(verbose )["-y"]["--yarp-verbose"]("Enable verbose mode");
+    auto cli = session.cli() | Opt(verbose)["--yarp-verbose"]("Enable verbose mode");
     session.cli( cli );
 #endif
 
@@ -41,51 +114,15 @@ int main(int argc, char *argv[])
         return returnCode;
     }
 
-    yarp::os::Network yarp;
+    setup_Environment();
 
-    yarp::os::Property opts;
-    opts.put("portdb",":memory:");
-    opts.put("subdb",":memory:");
-    opts.put("local",1);
-    yarp::os::NameStore *store = yarpserver_create(opts);
-    yarp.queryBypass(store);
-
-    if (verbose) {
-        Network::setVerbosity(1);
-    }
-
-    // To make sure that the dev test are able to find all the devices
-    // compile by YARP, also the one compiled as dynamic plugins
-    // we add the build directory to the YARP_DATA_DIRS enviromental variable
-    // CMAKE_CURRENT_DIR is the define by the CMakeLists.txt tests file
-    std::string dirs = CMAKE_BINARY_DIR +
-                       yarp::os::Network::getDirectorySeparator() +
-                       "share" +
-                       yarp::os::Network::getDirectorySeparator() +
-                       "yarp";
-
-    // Add TEST_DATA_DIR to YARP_DATA_DIRS in order to find the contexts used
-    // by the tests
-    dirs += yarp::os::Network::getPathSeparator() +
-            TEST_DATA_DIR;
-
-    // If set, append user YARP_DATA_DIRS
-    // FIXME check if this can be removed
-    Network::getEnvironment("YARP_DATA_DIRS");
-    if (!Network::getEnvironment("YARP_DATA_DIRS").empty()) {
-        dirs += yarp::os::Network::getPathSeparator() +
-                Network::getEnvironment("YARP_DATA_DIRS");
-    }
-
-    Network::setEnvironment("YARP_DATA_DIRS", dirs);
-    printf("YARP_DATA_DIRS=\"%s\"\n", Network::getEnvironment("YARP_DATA_DIRS").c_str());
-
+    init_Network();
+    init_NameStore();
 
     returnCode = session.run();
 
-
-    yarp.queryBypass(nullptr);
-    delete store;
+    fini_NameStore();
+    fini_Network();
 
     return returnCode;
 }
