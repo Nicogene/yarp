@@ -13,6 +13,7 @@ if(YARP_ENABLE_BROKEN_TESTS)
   add_definitions(-DBROKEN_TEST)
 endif()
 
+#[[
 if(NOT ${CMAKE_MINIMUM_REQUIRED_VERSION} VERSION_LESS 3.9)
   message(AUTHOR_WARNING "CMAKE_MINIMUM_REQUIRED_VERSION is now ${CMAKE_MINIMUM_REQUIRED_VERSION}. This check can be removed.")
 endif()
@@ -43,6 +44,8 @@ macro(yarp_disable_test _test _base_only)
     endif()
   endif()
 endmacro()
+
+]]#
 
 if(YARP_COMPILE_TESTS)
   # Prepare 'build_generator', 'build_options' and 'build_module_path' variables
@@ -81,6 +84,8 @@ if(YARP_COMPILE_TESTS)
                  @ONLY)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+#[[
+
   set(targets OS
               sig
               rosmsg
@@ -111,7 +116,7 @@ if(YARP_COMPILE_TESTS)
 
     set(EXE harness_${test_family})
     string(TOLOWER ${EXE} EXE)
-    add_executable(${EXE} ${harness_code})
+    add_executable(${EXE} harness.cpp ${harness_code})
     target_link_libraries(${EXE} YARP::YARP_OS
                                  YARP::YARP_init
                                  YARP::YARP_sig
@@ -185,27 +190,65 @@ if(YARP_COMPILE_TESTS)
     add_definitions(-DYARP_MULTIPLEANALOGSENSORSINTERFACES_TESTS)
   endif()
 
-  add_subdirectory(carriers)
-  add_subdirectory(devices)
-  add_subdirectory(yarpidl_thrift)
-  add_subdirectory(yarpidl_rosmsg)
+]]#
 
-
-  # Integration tests
-  option(YARP_TEST_INTEGRATION "Run integration tests (UNIX only)" FALSE)
-  mark_as_advanced(YARP_TEST_INTEGRATION)
-  if(YARP_TEST_INTEGRATION)
-    add_subdirectory(integration)
-  endif()
-
-
-  #disable failing test
-  if(YARP_DISABLE_FAILING_TESTS)
-    foreach(test ${FAILING_TESTS})
-      yarp_disable_test(${test} 0)
-    endforeach()
-  endif()
+# FIXME Restore these tests
+#   add_subdirectory(carriers)
+#   add_subdirectory(devices)
+#   add_subdirectory(yarpidl_thrift)
+#   add_subdirectory(yarpidl_rosmsg)
+#
+#
+#   # Integration tests
+#   option(YARP_TEST_INTEGRATION "Run integration tests (UNIX only)" FALSE)
+#   mark_as_advanced(YARP_TEST_INTEGRATION)
+#   if(YARP_TEST_INTEGRATION)
+#     add_subdirectory(integration)
+#   endif()
+#
+#
+#   #disable failing test
+#   if(YARP_DISABLE_FAILING_TESTS)
+#     foreach(test ${FAILING_TESTS})
+#       yarp_disable_test(${test} 0)
+#     endforeach()
+#   endif()
 
   add_subdirectory(misc)
+
+#########################################################################
+# Control where libraries and executables are placed during the build
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/tests")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/tests")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/tests")
+
+include(ParseAndAddCatchTests)
+set(PARSE_CATCH_TESTS_VERBOSE OFF CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_NO_HIDDEN_TESTS ON CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_TARGET_IN_TEST_NAME OFF CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_FIXTURE_IN_TEST_NAME ON CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON CACHE INTERNAL "")
+set(AdditionalCatchParameters "-s" "--use-colour" "yes")
+
+set(harness_main "${CMAKE_CURRENT_SOURCE_DIR}/harness.cpp")
+
+include_directories(${CMAKE_SOURCE_DIR}/extern/catch2)
+
+add_subdirectory(libYARP_OS)
+add_subdirectory(libYARP_sig)
+add_subdirectory(libYARP_rosmsg)
+add_subdirectory(libYARP_dev)
+add_subdirectory(libYARP_serversql)
+if (BROKEN_TEST)
+  add_subdirectory(libYARP_run)
+endif()
+if(TARGET YARP::YARP_math)
+  add_subdirectory(libYARP_math)
+endif()
+if(TARGET YARP::YARP_wire_rep_utils)
+  add_subdirectory(libYARP_wire_rep_utils)
+endif()
+# endif()
+
 
 endif()
