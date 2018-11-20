@@ -247,9 +247,8 @@ endif()
 if(TARGET YARP::YARP_wire_rep_utils)
   add_subdirectory(libYARP_wire_rep_utils)
 endif()
-#   add_subdirectory(yarpidl_thrift)
-add_subdirectory(yarpidl_rosmsg)
-# endif()
 
+add_subdirectory(yarpidl_thrift)
+add_subdirectory(yarpidl_rosmsg)
 
 endif()

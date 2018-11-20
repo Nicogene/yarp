@@ -20,11 +20,11 @@ find_package(YARP REQUIRED)
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/ycm/ycm-0.9.0.8/3rdparty/ParseAndAddCatchTests.cmake")
 set(PARSE_CATCH_TESTS_VERBOSE OFF CACHE INTERNAL "")
 set(PARSE_CATCH_TESTS_NO_HIDDEN_TESTS ON CACHE INTERNAL "")
-set(PARSE_CATCH_TESTS_ADD_TARGET_IN_TEST_NAME OFF CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_TARGET_IN_TEST_NAME ON CACHE INTERNAL "")
 set(PARSE_CATCH_TESTS_ADD_FIXTURE_IN_TEST_NAME ON CACHE INTERNAL "")
 set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON CACHE INTERNAL "")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/catch2)
-# # set(AdditionalCatchParameters "-s" "--use-colour" "yes")
+set(AdditionalCatchParameters "-s" "--use-colour" "yes")
 
 # Test using yarp_idl_to_dir
 set(generated_libs_dir "${CMAKE_CURRENT_BINARY_DIR}/bits")
@@ -37,10 +37,9 @@ yarp_idl_to_dir(HeaderTest2.srv ${generated_libs_dir} S6 H6)
 
 include_directories(${generated_libs_dir}/include)
 add_executable(demo_yarp_idl_to_dir main.cpp ${S1} ${S2} ${S3} ${S4} ${H1} ${H2} ${H3} ${H4} ${S5} ${H5} ${S6} ${H6})
-target_link_libraries(demo_yarp_idl_to_dir ${YARP_LIBRARIES} ${ACE_LIBRARIES})
+target_link_libraries(demo_yarp_idl_to_dir ${YARP_LIBRARIES})
 
-add_test(NAME demo_yarp_idl_to_dir
-         COMMAND demo_yarp_idl_to_dir)
+ParseAndAddCatchTests(demo_yarp_idl_to_dir)
 
 # Test using yarp_add_idl
 set(IDL_FILES SharedData.msg
@@ -52,7 +51,6 @@ set(IDL_FILES SharedData.msg
 yarp_add_idl(IDL_GEN_FILES ${IDL_FILES})
 
 add_executable(demo_yarp_add_idl main.cpp ${IDL_GEN_FILES})
-target_link_libraries(demo_yarp_add_idl ${YARP_LIBRARIES} ${ACE_LIBRARIES})
+target_link_libraries(demo_yarp_add_idl ${YARP_LIBRARIES})
 
-add_test(NAME demo_yarp_add_idl
-         COMMAND demo_yarp_add_idl)
+ParseAndAddCatchTests(demo_yarp_add_idl)
