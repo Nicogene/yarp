@@ -17,9 +17,14 @@ set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "Generated Files")
 
 find_package(YARP REQUIRED)
 
-# ACE is required for yarp/os/impl/UnitTests.h
-find_package(ACE REQUIRED)
-include_directories(${ACE_INCLUDE_DIRS})
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/ycm/ycm-0.9.0.8/3rdparty/ParseAndAddCatchTests.cmake")
+set(PARSE_CATCH_TESTS_VERBOSE OFF CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_NO_HIDDEN_TESTS ON CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_TARGET_IN_TEST_NAME OFF CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_FIXTURE_IN_TEST_NAME ON CACHE INTERNAL "")
+set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON CACHE INTERNAL "")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/catch2)
+# # set(AdditionalCatchParameters "-s" "--use-colour" "yes")
 
 # Test using yarp_idl_to_dir
 set(generated_libs_dir "${CMAKE_CURRENT_BINARY_DIR}/bits")
@@ -35,7 +40,7 @@ add_executable(demo_yarp_idl_to_dir main.cpp ${S1} ${S2} ${S3} ${S4} ${H1} ${H2}
 target_link_libraries(demo_yarp_idl_to_dir ${YARP_LIBRARIES} ${ACE_LIBRARIES})
 
 add_test(NAME demo_yarp_idl_to_dir
-         COMMAND demo_yarp_idl_to_dir --help)
+         COMMAND demo_yarp_idl_to_dir)
 
 # Test using yarp_add_idl
 set(IDL_FILES SharedData.msg
@@ -50,4 +55,4 @@ add_executable(demo_yarp_add_idl main.cpp ${IDL_GEN_FILES})
 target_link_libraries(demo_yarp_add_idl ${YARP_LIBRARIES} ${ACE_LIBRARIES})
 
 add_test(NAME demo_yarp_add_idl
-         COMMAND demo_yarp_add_idl --help)
+         COMMAND demo_yarp_add_idl)

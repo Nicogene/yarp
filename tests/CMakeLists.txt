@@ -195,8 +195,7 @@ if(YARP_COMPILE_TESTS)
 # FIXME Restore these tests
 #   add_subdirectory(carriers)
 #   add_subdirectory(devices)
-#   add_subdirectory(yarpidl_thrift)
-#   add_subdirectory(yarpidl_rosmsg)
+
 #
 #
 #   # Integration tests
@@ -248,6 +247,8 @@ endif()
 if(TARGET YARP::YARP_wire_rep_utils)
   add_subdirectory(libYARP_wire_rep_utils)
 endif()
+#   add_subdirectory(yarpidl_thrift)
+add_subdirectory(yarpidl_rosmsg)
 # endif()
 
 
