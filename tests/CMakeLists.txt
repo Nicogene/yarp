@@ -193,7 +193,6 @@ if(YARP_COMPILE_TESTS)
 ]]#
 
 # FIXME Restore these tests
-#   add_subdirectory(carriers)
 #   add_subdirectory(devices)
 
 #
@@ -250,5 +249,5 @@ endif()
 
 add_subdirectory(yarpidl_thrift)
 add_subdirectory(yarpidl_rosmsg)
-
+add_subdirectory(carriers)
 endif()
