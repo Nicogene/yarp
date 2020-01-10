@@ -13,6 +13,7 @@
 
 #include <yarp/os/Value.h>
 #include <yarp/sig/ImageUtils.h>
+#include <yarp/math/Math.h>
 
 #include <librealsense2/rsutil.h>
 #include "realsense2Driver.h"
@@ -556,6 +557,15 @@ bool realsense2Driver::initializeRealsenseDevice()
         m_device = m_profile.get_device();
         if (m_verbose)
             yInfo()<<get_device_information(m_device).c_str();
+    }
+
+    // TODO check if it is with imu and
+    m_cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+    m_cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
+    m_sensor_has_pose_capabilities = false;
+    if (m_sensor_has_pose_capabilities)
+    {
+        m_cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     }
 
 
@@ -1535,3 +1545,228 @@ int  realsense2Driver::width() const
 {
     return m_infrared_intrin.width*2;
 }
+
+//---------------------------------------------------------------------------------------------------------------
+/* IThreeAxisGyroscopes methods */
+size_t realsense2Driver::getNrOfThreeAxisGyroscopes() const
+{
+    return 1;
+}
+
+yarp::dev::MAS_status realsense2Driver::getThreeAxisGyroscopeStatus(size_t sens_index) const
+{
+    if (sens_index != 0) { return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    return yarp::dev::MAS_status::MAS_OK;
+}
+
+bool realsense2Driver::getThreeAxisGyroscopeName(size_t sens_index, std::string& name) const
+{
+    if (sens_index != 0) { return false; }
+    name = m_inertial_sensor_name_prefix + "/" + m_gyro_sensor_tag;
+    return true;
+}
+
+bool realsense2Driver::getThreeAxisGyroscopeFrameName(size_t sens_index, std::string& frameName) const
+{
+    if (sens_index != 0) { return false; }
+    frameName = m_gyroFrameName;
+    return true;
+}
+
+bool realsense2Driver::getThreeAxisGyroscopeMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const
+{
+    if (sens_index != 0) {
+        return false;
+    }
+
+    std::lock_guard<std::mutex> guard(realsense2Driver::m_mutex);
+    rs2::frameset dataframe = m_pipeline.wait_for_frames();
+    auto fg = dataframe.first(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
+    rs2::motion_frame gyro = fg.as<rs2::motion_frame>();
+    m_last_gyro = gyro.get_motion_data();
+    out.resize(3);
+    out[0] = m_last_gyro.x;
+    out[1] = m_last_gyro.y;
+    out[2] = m_last_gyro.z;
+    return true;
+}
+
+//-------------------------------------------------------------------------------------------------------
+
+/* IThreeAxisLinearAccelerometers methods */
+size_t realsense2Driver::getNrOfThreeAxisLinearAccelerometers() const
+{
+    return 1;
+}
+
+yarp::dev::MAS_status realsense2Driver::getThreeAxisLinearAccelerometerStatus(size_t sens_index) const
+{
+    if (sens_index != 0) { return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    return yarp::dev::MAS_status::MAS_OK;
+}
+
+bool realsense2Driver::getThreeAxisLinearAccelerometerName(size_t sens_index, std::string& name) const
+{
+    if (sens_index != 0) { return false; }
+    name = m_inertial_sensor_name_prefix + "/" + m_accel_sensor_tag;
+    return true;
+}
+
+bool realsense2Driver::getThreeAxisLinearAccelerometerFrameName(size_t sens_index, std::string& frameName) const
+{
+    if (sens_index != 0) { return false; }
+    frameName = m_accelFrameName;
+    return true;
+}
+
+bool realsense2Driver::getThreeAxisLinearAccelerometerMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+    rs2::frameset dataframe = m_pipeline.wait_for_frames();
+    auto fa = dataframe.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+    rs2::motion_frame accel = fa.as<rs2::motion_frame>();
+    m_last_accel = accel.get_motion_data();
+    out.resize(3);
+    out[0] = m_last_accel.x;
+    out[1] = m_last_accel.y;
+    out[2] = m_last_accel.z;
+    return true;
+}
+
+//-------------------------------------------------------------------------------------------------------
+
+/* IOrientationSensors methods */
+size_t realsense2Driver::getNrOfOrientationSensors() const
+{
+    if (m_sensor_has_pose_capabilities) { return 1; }
+    if (m_sensor_has_orientation_estimator) { return 1; }
+    return 0;
+}
+
+yarp::dev::MAS_status realsense2Driver::getOrientationSensorStatus(size_t sens_index) const
+{
+    if (!m_sensor_has_pose_capabilities || !m_sensor_has_orientation_estimator) {return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    if (sens_index != 0) { return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    return yarp::dev::MAS_status::MAS_OK;
+}
+
+bool realsense2Driver::getOrientationSensorName(size_t sens_index, std::string& name) const
+{
+    if (!m_sensor_has_pose_capabilities || !m_sensor_has_orientation_estimator)
+    {
+        return false;
+    }
+    if (sens_index != 0) { return false; }
+    name = m_inertial_sensor_name_prefix + "/" + m_orientation_sensor_tag;
+    return true;
+}
+
+bool realsense2Driver::getOrientationSensorFrameName(size_t sens_index, std::string& frameName) const
+{
+    if (!m_sensor_has_pose_capabilities || !m_sensor_has_orientation_estimator)
+    {
+        return false;
+    }
+    if (sens_index != 0) { return false; }
+    frameName = m_orientationFrameName;
+    return true;
+}
+
+
+bool realsense2Driver::getOrientationSensorMeasureAsRollPitchYaw(size_t sens_index, yarp::sig::Vector& rpy, double& timestamp) const
+{
+    if (!m_sensor_has_pose_capabilities || !m_sensor_has_orientation_estimator)
+    {
+        return false;
+    }
+    return sens_index == 0;
+}
+
+//-------------------------------------------------------------------------------------------------------
+
+/* IPoseSensors methods */
+size_t realsense2Driver::getNrOfPoseSensors() const
+{
+    if (!m_sensor_has_pose_capabilities) { return 0; }
+    return 1;
+}
+
+yarp::dev::MAS_status realsense2Driver::getPoseSensorStatus(size_t sens_index) const
+{
+    if (!m_sensor_has_pose_capabilities) { return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    if (sens_index != 0) { return yarp::dev::MAS_status::MAS_UNKNOWN; }
+    return yarp::dev::MAS_status::MAS_OK;
+}
+
+bool realsense2Driver::getPoseSensorName(size_t sens_index, std::string& name) const
+{
+    if (!m_sensor_has_pose_capabilities) { return false; }
+    if (sens_index != 0) { return false; }
+    name = m_inertial_sensor_name_prefix + "/" + m_pose_sensor_tag;
+    return true;
+}
+
+bool realsense2Driver::getPoseSensorFrameName(size_t sens_index, std::string& frameName) const
+{
+    if (!m_sensor_has_pose_capabilities) { return false; }
+    if (sens_index != 0) { return false; }
+    frameName = m_poseFrameName;
+    return true;
+}
+
+
+bool realsense2Driver::getPoseSensorMeasureAsXYZRPY(size_t sens_index, yarp::sig::Vector& xyzrpy, double& timestamp) const
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+    rs2::frameset dataframe = m_pipeline.wait_for_frames();
+    auto fa = dataframe.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+    rs2::pose_frame pose = fa.as<rs2::pose_frame>();
+    m_last_pose = pose.get_pose_data();
+    xyzrpy.resize(6);
+    xyzrpy[0] = m_last_pose.translation.x;
+    xyzrpy[1] = m_last_pose.translation.y;
+    xyzrpy[2] = m_last_pose.translation.z;
+    yarp::math::Quaternion q(m_last_pose.rotation.x, m_last_pose.rotation.y,m_last_pose.rotation.z,m_last_pose.rotation.w);
+    yarp::sig::Matrix mat = q.toRotationMatrix3x3();
+    yarp::sig::Vector rpy = yarp::math::dcm2rpy(mat);
+    xyzrpy[3] = rpy[0];
+    xyzrpy[4] = rpy[1];
+    xyzrpy[5] = rpy[2];
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+#ifdef FORCE_MISSING_MAGNETOMETERS_ON
+/* IThreeAxisMagnetometers methods */
+size_t realsense2withIMUDriver::getNrOfThreeAxisMagnetometers() const
+{
+    return 0;
+}
+
+yarp::dev::MAS_status realsense2withIMUDriver::getThreeAxisMagnetometerStatus(size_t sens_index) const
+{
+    return yarp::dev::MAS_status::MAS_UNKNOWN;
+}
+
+bool realsense2withIMUDriver::getThreeAxisMagnetometerName(size_t sens_index, std::string& name) const
+{
+    name = "invalid";
+    return false;
+}
+
+bool realsense2withIMUDriver::getThreeAxisMagnetometerFrameName(size_t sens_index, std::string& frameName) const
+{
+    frameName = "invalid";
+    return false;
+}
+
+bool realsense2withIMUDriver::getThreeAxisMagnetometerMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const
+{
+    out.resize(3);
+    out[0] = out[1] = out[2] = std::nan("");
+    timestamp = yarp::os::Time::now();
+    return false;
+}
+#endif
+

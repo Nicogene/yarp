@@ -22,6 +22,7 @@
 #include <yarp/os/Stamp.h>
 #include <yarp/dev/IRGBDSensor.h>
 #include <yarp/dev/RGBDSensorParamParser.h>
+#include <yarp/dev/MultipleAnalogSensorsInterfaces.h>
 #include <librealsense2/rs.hpp>
 
 
@@ -122,7 +123,13 @@ class realsense2Driver :
         public yarp::dev::DeviceDriver,
         public yarp::dev::IFrameGrabberControls,
         public yarp::dev::IFrameGrabberImageRaw,
-        public yarp::dev::IRGBDSensor
+        public yarp::dev::IRGBDSensor,
+        public yarp::dev::IThreeAxisGyroscopes,
+        public yarp::dev::IThreeAxisLinearAccelerometers,
+#ifdef FORCE_MISSING_MAGNETOMETERS_ON
+        public yarp::dev::IThreeAxisMagnetometers,
+#endif
+        public yarp::dev::IOrientationSensors
 {
 private:
     typedef yarp::sig::ImageOf<yarp::sig::PixelFloat> depthImage;
@@ -194,6 +201,43 @@ public:
     int height() const override;
     int width() const override;
 
+    /* IThreeAxisGyroscopes methods */
+    size_t getNrOfThreeAxisGyroscopes() const override;
+    yarp::dev::MAS_status getThreeAxisGyroscopeStatus(size_t sens_index) const override;
+    bool getThreeAxisGyroscopeName(size_t sens_index, std::string& name) const override;
+    bool getThreeAxisGyroscopeFrameName(size_t sens_index, std::string& frameName) const override;
+    bool getThreeAxisGyroscopeMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const override;
+
+    /* IThreeAxisLinearAccelerometers methods */
+    size_t getNrOfThreeAxisLinearAccelerometers() const override;
+    yarp::dev::MAS_status getThreeAxisLinearAccelerometerStatus(size_t sens_index) const override;
+    bool getThreeAxisLinearAccelerometerName(size_t sens_index, std::string& name) const override;
+    bool getThreeAxisLinearAccelerometerFrameName(size_t sens_index, std::string& frameName) const override;
+    bool getThreeAxisLinearAccelerometerMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const override;
+
+#ifdef FORCE_MISSING_MAGNETOMETERS_ON
+    /* IThreeAxisMagnetometers methods */
+    size_t getNrOfThreeAxisMagnetometers() const override;
+    yarp::dev::MAS_status getThreeAxisMagnetometerStatus(size_t sens_index) const override;
+    bool getThreeAxisMagnetometerName(size_t sens_index, std::string& name) const override;
+    bool getThreeAxisMagnetometerFrameName(size_t sens_index, std::string& frameName) const override;
+    bool getThreeAxisMagnetometerMeasure(size_t sens_index, yarp::sig::Vector& out, double& timestamp) const override;
+#endif
+
+    /* IOrientationSensors methods */
+    size_t getNrOfOrientationSensors() const override;
+    yarp::dev::MAS_status getOrientationSensorStatus(size_t sens_index) const override;
+    bool getOrientationSensorName(size_t sens_index, std::string& name) const override;
+    bool getOrientationSensorFrameName(size_t sens_index, std::string& frameName) const override;
+    bool getOrientationSensorMeasureAsRollPitchYaw(size_t sens_index, yarp::sig::Vector& rpy, double& timestamp) const override;
+
+    /* IPoseSensors methods */
+    size_t getNrOfPoseSensors() const ;
+    yarp::dev::MAS_status getPoseSensorStatus(size_t sens_index) const;
+    bool getPoseSensorName(size_t sens_index, std::string& name) const;
+    bool getPoseSensorFrameName(size_t sens_index, std::string& frameName) const;
+    bool getPoseSensorMeasureAsXYZRPY(size_t sens_index, yarp::sig::Vector& rpy, double& timestamp) const;
+
 protected:
     //method
     inline bool initializeRealsenseDevice();
@@ -222,6 +266,25 @@ protected:
     rs2_intrinsics m_depth_intrin{}, m_color_intrin{}, m_infrared_intrin{};
     rs2_extrinsics m_depth_to_color{}, m_color_to_depth{};
     rs2_stream  m_alignment_stream{RS2_STREAM_COLOR};
+    mutable rs2_vector m_last_gyro;
+    mutable rs2_vector m_last_accel;
+    mutable rs2_pose   m_last_pose;
+
+    bool m_sensor_has_pose_capabilities{false};
+    bool m_sensor_has_orientation_estimator;
+
+    //strings
+    std::string m_inertial_sensor_name_prefix;
+    const std::string m_accel_sensor_tag{"accelerations_sensor"};
+    const std::string m_gyro_sensor_tag{"gyro_sensor"};
+    const std::string m_orientation_sensor_tag{"orientation_sensor"};
+    const std::string m_pose_sensor_tag{"pose_sensor"};
+    const std::string m_magnetic_sensor_tag{"magnetic_field_sensor"};
+    std::string m_gyroFrameName;
+    std::string m_accelFrameName;
+    std::string m_orientationFrameName;
+    std::string m_poseFrameName;
+    std::string m_magneticFrameName;
 
 
     yarp::os::Stamp m_rgb_stamp;
