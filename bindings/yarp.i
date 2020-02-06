@@ -1071,7 +1071,10 @@ typedef yarp::os::BufferedPort<ImageRgbFloat> BufferedPortImageRgbFloat;
     %extend yarp::dev::IEncoderArrays {EXTENDED_ANALOG_SENSOR_INTERFACE(EncoderArray)}
     %extend yarp::dev::ISkinPatches {EXTENDED_ANALOG_SENSOR_INTERFACE(SkinPatch)}
 #endif
-
+%{
+#define SWIG_FILE_WITH_INIT
+#include <yarp/sig/Vector.h>
+%}
 %extend yarp::sig::VectorOf<double> {
 
     // This in not a real constructor actually, it is converted by swig to a function returning a pointer.
